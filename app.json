@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "2048 Mobile",
+    "slug": "2048-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#faf8ef"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourdomain.2048mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#faf8ef"
+      },
+      "package": "com.yourdomain.mobile2048"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
