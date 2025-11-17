@@ -6,6 +6,13 @@ A React Native implementation of the classic 2048 puzzle game for iOS and Androi
 
 - **Full 2048 Game Mechanics**: Swipe to merge tiles and reach 2048!
 - **Lobby Screen**: Start new games and view statistics
+- **Hall of Fame**: Compete with other players on global leaderboards
+  - Best Score rankings
+  - Best Tile achievements
+  - Win Rate comparison (minimum 10 games)
+  - Total Wins leaderboard
+  - See your rank in real-time
+- **Player Profiles**: Set up your username to compete on leaderboards
 - **Game Statistics**: Track games played, win rate, total moves, and best tiles
 - **Score Tracking**: Current score and best score persistence
 - **Responsive Design**: Works on various mobile screen sizes
@@ -57,11 +64,13 @@ npm run android
 
 ## How to Play
 
-1. **Start a New Game**: Tap "NEW GAME" from the lobby
-2. **Move Tiles**: Swipe in any direction (up, down, left, right)
-3. **Merge Tiles**: When two tiles with the same number touch, they merge into one
-4. **Win Condition**: Reach the 2048 tile
-5. **Game Over**: When no more moves are possible
+1. **Set Up Username** (Optional): Create a username to appear on the Hall of Fame
+2. **Start a New Game**: Tap "NEW GAME" from the lobby
+3. **Move Tiles**: Swipe in any direction (up, down, left, right)
+4. **Merge Tiles**: When two tiles with the same number touch, they merge into one
+5. **Win Condition**: Reach the 2048 tile
+6. **Game Over**: When no more moves are possible
+7. **Compete**: Check the Hall of Fame to see how you rank against other players
 
 ## Game Statistics
 
@@ -73,22 +82,55 @@ The game tracks:
 - **Best Tile**: Highest tile ever achieved
 - **Best Score**: Highest score ever achieved
 
+## Hall of Fame
+
+The Hall of Fame features four competitive leaderboards:
+
+1. **Best Score**: Rankings by highest score achieved
+   - Showcases top scorers
+   - Gold, silver, bronze medals for top 3
+
+2. **Best Tile**: Rankings by highest tile reached
+   - Displays who reached 2048, 4096, and beyond
+   - Secondary ranking by score for tie-breaking
+
+3. **Win Rate**: Rankings by win percentage
+   - Minimum 10 games required for fair comparison
+   - Shows consistency and skill level
+
+4. **Total Wins**: Rankings by number of games won
+   - Rewards dedication and practice
+   - Shows total victories
+
+**Features**:
+- Your current rank displayed prominently
+- Current user highlighted in leaderboards
+- Real-time ranking updates
+- Easy username management through Statistics menu
+- Beautiful UI with medal icons for top performers
+
+**Note**: Currently uses demonstration data combined with your local stats. The architecture is designed to easily integrate with a real backend service (Firebase, AWS, etc.) for global competition.
+
 ## Project Structure
 
 ```
 2048-mobile/
 ├── src/
 │   ├── components/
-│   │   ├── Grid.js          # Game grid component
-│   │   └── Tile.js          # Individual tile component
+│   │   ├── Grid.js              # Game grid component
+│   │   └── Tile.js              # Individual tile component
 │   ├── screens/
-│   │   ├── LobbyScreen.js   # Main menu screen
-│   │   └── GameScreen.js    # Game play screen
+│   │   ├── LobbyScreen.js       # Main menu screen
+│   │   ├── GameScreen.js        # Game play screen
+│   │   ├── HallOfFameScreen.js  # Leaderboard screen
+│   │   └── UsernameSetupScreen.js # Username setup screen
 │   └── utils/
-│       ├── gameLogic.js     # Core 2048 game logic
-│       ├── storage.js       # AsyncStorage utilities
-│       └── colors.js        # Color scheme definitions
-├── App.js                   # Main app entry point
+│       ├── gameLogic.js         # Core 2048 game logic
+│       ├── storage.js           # AsyncStorage utilities
+│       ├── profile.js           # User profile management
+│       ├── leaderboard.js       # Leaderboard data service
+│       └── colors.js            # Color scheme definitions
+├── App.js                       # Main app entry point
 ├── package.json
 └── app.json
 ```
@@ -109,9 +151,12 @@ This project follows **SOLID principles** and **Clean Architecture** guidelines:
 1. **Single Responsibility Principle (SRP)**
    - Each module has one clear purpose:
      - `gameLogic.js` - Pure game mechanics only
-     - `storage.js` - Data persistence only
+     - `storage.js` - Game statistics persistence only
+     - `profile.js` - User profile management only
+     - `leaderboard.js` - Leaderboard data service only
      - `colors.js` - Styling constants only
    - Components are focused: `Tile` handles individual tiles, `Grid` handles layout
+   - Screens have single concerns: `GameScreen` for gameplay, `HallOfFameScreen` for leaderboards
 
 2. **Open/Closed Principle (OCP)**
    - Game logic functions are open for extension but closed for modification
@@ -135,15 +180,24 @@ This project follows **SOLID principles** and **Clean Architecture** guidelines:
 
 **Separation of Concerns:**
 ```
-┌─────────────────────────────────────┐
-│  Presentation Layer (Screens/UI)   │  ← React components
-├─────────────────────────────────────┤
-│  Application Layer (Components)    │  ← Reusable UI components
-├─────────────────────────────────────┤
-│  Business Logic (Utils/Logic)      │  ← Pure functions, game rules
-├─────────────────────────────────────┤
-│  Data Layer (Storage)               │  ← Persistence abstraction
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  Presentation Layer (Screens/UI)                   │
+│  ├─ LobbyScreen, GameScreen, HallOfFameScreen      │
+│  └─ UsernameSetupScreen                            │
+├─────────────────────────────────────────────────────┤
+│  Application Layer (Components)                    │
+│  ├─ Grid, Tile                                     │
+│  └─ Reusable UI components                         │
+├─────────────────────────────────────────────────────┤
+│  Business Logic (Utils/Logic)                      │
+│  ├─ gameLogic.js (pure game rules)                 │
+│  └─ leaderboard.js (ranking logic)                 │
+├─────────────────────────────────────────────────────┤
+│  Data Layer (Storage & Services)                   │
+│  ├─ storage.js (game stats)                        │
+│  ├─ profile.js (user data)                         │
+│  └─ Backend abstraction (ready for integration)    │
+└─────────────────────────────────────────────────────┘
 ```
 
 **Key Principles Applied:**
