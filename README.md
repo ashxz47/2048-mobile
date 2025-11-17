@@ -100,6 +100,73 @@ The game tracks:
 - **Data Persistence**: @react-native-async-storage/async-storage for statistics
 - **Animations**: React Native Animated API
 
+## Architecture & Development Principles
+
+This project follows **SOLID principles** and **Clean Architecture** guidelines:
+
+### SOLID Principles
+
+1. **Single Responsibility Principle (SRP)**
+   - Each module has one clear purpose:
+     - `gameLogic.js` - Pure game mechanics only
+     - `storage.js` - Data persistence only
+     - `colors.js` - Styling constants only
+   - Components are focused: `Tile` handles individual tiles, `Grid` handles layout
+
+2. **Open/Closed Principle (OCP)**
+   - Game logic functions are open for extension but closed for modification
+   - Color scheme can be extended without modifying existing code
+   - New game modes can be added without changing core logic
+
+3. **Liskov Substitution Principle (LSP)**
+   - Components accept props consistently
+   - Functions maintain expected behavior with valid inputs
+
+4. **Interface Segregation Principle (ISP)**
+   - Components receive only the props they need
+   - Utility functions are focused and specific
+
+5. **Dependency Inversion Principle (DIP)**
+   - UI components depend on abstractions (game logic functions), not implementations
+   - Storage layer is abstracted from screens
+   - Business logic is independent of UI framework
+
+### Clean Architecture
+
+**Separation of Concerns:**
+```
+┌─────────────────────────────────────┐
+│  Presentation Layer (Screens/UI)   │  ← React components
+├─────────────────────────────────────┤
+│  Application Layer (Components)    │  ← Reusable UI components
+├─────────────────────────────────────┤
+│  Business Logic (Utils/Logic)      │  ← Pure functions, game rules
+├─────────────────────────────────────┤
+│  Data Layer (Storage)               │  ← Persistence abstraction
+└─────────────────────────────────────┘
+```
+
+**Key Principles Applied:**
+- **Pure Functions**: Game logic (`gameLogic.js`) contains pure, testable functions
+- **Separation of Concerns**: UI, business logic, and data are in separate layers
+- **Dependency Flow**: Dependencies point inward (UI → Logic → Data)
+- **Testability**: Business logic can be tested independently of UI
+- **Reusability**: Components and utilities are modular and reusable
+- **Maintainability**: Changes to one layer don't affect others
+
+### Development Guidelines
+
+When extending this project, always:
+
+1. **Keep business logic pure** - No side effects in game logic functions
+2. **Separate UI from logic** - Components should orchestrate, not implement game rules
+3. **Use single-purpose functions** - Each function should do one thing well
+4. **Abstract external dependencies** - Wrap third-party libraries (e.g., AsyncStorage)
+5. **Make code testable** - Write functions that are easy to unit test
+6. **Follow consistent patterns** - Maintain the established architectural structure
+7. **Document complex logic** - Add comments for non-obvious algorithms
+8. **Keep components focused** - Break down large components into smaller ones
+
 ## Color Scheme
 
 The game uses the classic 2048 color palette:
