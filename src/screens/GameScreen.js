@@ -36,6 +36,70 @@ const GameScreen = ({ navigation }) => {
     initGame();
   }, []);
 
+  // Keyboard controls for web
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleMove('up');
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleMove('down');
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleMove('left');
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleMove('right');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => {
+        window.removeEventListener('keydown', handleKeyPress);
+      };
+    }
+  }, [grid, score, moves, gameOver, won, continueAfterWin]);
+
+  // Mouse drag controls for web
+  useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+
+    const handleMouseDown = (e) => {
+      startX = e.clientX;
+      startY = e.clientY;
+    };
+
+    const handleMouseUp = (e) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const minSwipeDistance = 50;
+
+      if (absX < minSwipeDistance && absY < minSwipeDistance) return;
+
+      if (absX > absY) {
+        if (dx > 0) handleMove('right');
+        else handleMove('left');
+      } else {
+        if (dy > 0) handleMove('down');
+        else handleMove('up');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [grid, score, moves, gameOver, won, continueAfterWin]);
+
   const initGame = async () => {
     try {
       const newGrid = initializeGrid();
@@ -186,7 +250,7 @@ const GameScreen = ({ navigation }) => {
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Highest Tile</Text>
-            <Text style={styles.statValue}>{getHighestTile(grid)}</Text>
+            <Text style={styles.statValue}>{grid.length > 0 ? getHighestTile(grid) : 0}</Text>
           </View>
         </View>
 
@@ -210,7 +274,11 @@ const GameScreen = ({ navigation }) => {
           {grid.length > 0 && <Grid grid={grid} />}
         </View>
 
-        <Text style={styles.instructions}>Swipe to move tiles!</Text>
+        <Text style={styles.instructions}>
+          {typeof window !== 'undefined'
+            ? 'Use arrow keys or click & drag to move tiles!'
+            : 'Swipe to move tiles!'}
+        </Text>
 
         {/* Win Modal */}
         <Modal visible={won && !continueAfterWin && !gameOver} transparent={true} animationType="fade">
@@ -242,7 +310,7 @@ const GameScreen = ({ navigation }) => {
               <Text style={styles.modalText}>No more moves available</Text>
               <Text style={styles.modalScore}>Final Score: {score}</Text>
               <Text style={styles.modalScore}>Moves: {moves}</Text>
-              <Text style={styles.modalScore}>Highest Tile: {getHighestTile(grid)}</Text>
+              <Text style={styles.modalScore}>Highest Tile: {grid.length > 0 ? getHighestTile(grid) : 0}</Text>
 
               <TouchableOpacity style={styles.modalButton} onPress={handleUndo}>
                 <Text style={styles.buttonText}>UNDO</Text>
