@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Modal,
   Alert,
-  PanResponder,
 } from 'react-native';
 import Grid from '../components/Grid';
+import { GameModal } from '../components/GameModal';
+import { useInputController } from '../hooks/useInputController';
 import { colors } from '../utils/colors';
 import {
   initializeGrid,
@@ -37,68 +37,9 @@ const GameScreen = ({ navigation }) => {
   }, []);
 
   // Keyboard controls for web
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        handleMove('up');
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        handleMove('down');
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        handleMove('left');
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        handleMove('right');
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', handleKeyPress);
-      return () => {
-        window.removeEventListener('keydown', handleKeyPress);
-      };
-    }
-  }, [grid, score, moves, gameOver, won, continueAfterWin]);
-
-  // Mouse drag controls for web
-  useEffect(() => {
-    let startX = 0;
-    let startY = 0;
-
-    const handleMouseDown = (e) => {
-      startX = e.clientX;
-      startY = e.clientY;
-    };
-
-    const handleMouseUp = (e) => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const absX = Math.abs(dx);
-      const absY = Math.abs(dy);
-      const minSwipeDistance = 50;
-
-      if (absX < minSwipeDistance && absY < minSwipeDistance) return;
-
-      if (absX > absY) {
-        if (dx > 0) handleMove('right');
-        else handleMove('left');
-      } else {
-        if (dy > 0) handleMove('down');
-        else handleMove('up');
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mousedown', handleMouseDown);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [grid, score, moves, gameOver, won, continueAfterWin]);
+  // Use unified input controller for keyboard, mouse, and touch
+  const inputEnabled = !gameOver && (won ? continueAfterWin : true);
+  const panHandlers = useInputController(handleMove, inputEnabled);
 
   const initGame = async () => {
     try {
@@ -127,7 +68,7 @@ const GameScreen = ({ navigation }) => {
 
     // Save current state for undo
     setPreviousStates(prev => [...prev, {
-      grid: JSON.parse(JSON.stringify(grid)),
+      grid: grid.map(row => [...row]), // Efficient deep clone of 2D array
       score,
       moves,
       gameOver,
@@ -197,31 +138,8 @@ const GameScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
-  // PanResponder for gesture handling
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderRelease: (evt, gestureState) => {
-        const { dx, dy } = gestureState;
-        const absX = Math.abs(dx);
-        const absY = Math.abs(dy);
-        const minSwipeDistance = 50;
-
-        if (absX < minSwipeDistance && absY < minSwipeDistance) return;
-
-        if (absX > absY) {
-          if (dx > 0) handleMove('right');
-          else handleMove('left');
-        } else {
-          if (dy > 0) handleMove('down');
-          else handleMove('up');
-        }
-      },
-    })
-  ).current;
-
   return (
-    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+    <View style={{ flex: 1 }} {...panHandlers}>
       {error && (
         <View style={{ padding: 20, backgroundColor: 'red' }}>
           <Text style={{ color: 'white', fontSize: 20 }}>Error: {error}</Text>
@@ -281,54 +199,37 @@ const GameScreen = ({ navigation }) => {
         </Text>
 
         {/* Win Modal */}
-        <Modal visible={won && !continueAfterWin && !gameOver} transparent={true} animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>You Win!</Text>
-              <Text style={styles.modalText}>You reached 2048!</Text>
-              <Text style={styles.modalScore}>Score: {score}</Text>
-
-              <TouchableOpacity style={styles.modalButton} onPress={continueGame}>
-                <Text style={styles.buttonText}>CONTINUE</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.secondaryButton]}
-                onPress={restartGame}
-              >
-                <Text style={styles.buttonText}>NEW GAME</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        <GameModal
+          visible={won && !continueAfterWin && !gameOver}
+          title="You Win!"
+          message="Congratulations! You reached 2048!"
+          stats={[
+            { label: 'Score', value: score.toLocaleString() }
+          ]}
+          actions={[
+            { label: 'CONTINUE', onPress: continueGame },
+            { label: 'NEW GAME', onPress: restartGame, secondary: true }
+          ]}
+          onClose={continueGame}
+        />
 
         {/* Game Over Modal */}
-        <Modal visible={gameOver} transparent={true} animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Game Over!</Text>
-              <Text style={styles.modalText}>No more moves available</Text>
-              <Text style={styles.modalScore}>Final Score: {score}</Text>
-              <Text style={styles.modalScore}>Moves: {moves}</Text>
-              <Text style={styles.modalScore}>Highest Tile: {grid.length > 0 ? getHighestTile(grid) : 0}</Text>
-
-              <TouchableOpacity style={styles.modalButton} onPress={handleUndo}>
-                <Text style={styles.buttonText}>UNDO</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.modalButton, styles.secondaryButton]} onPress={restartGame}>
-                <Text style={styles.buttonText}>NEW GAME</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.secondaryButton, { marginTop: 10 }]}
-                onPress={goToLobby}
-              >
-                <Text style={styles.buttonText}>MENU</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        <GameModal
+          visible={gameOver}
+          title="Game Over!"
+          message="No more moves available"
+          stats={[
+            { label: 'Final Score', value: score.toLocaleString() },
+            { label: 'Moves', value: moves },
+            { label: 'Highest Tile', value: grid.length > 0 ? getHighestTile(grid) : 0 }
+          ]}
+          actions={[
+            { label: 'UNDO', onPress: handleUndo, disabled: previousStates.length === 0 },
+            { label: 'NEW GAME', onPress: restartGame, secondary: true },
+            { label: 'MENU', onPress: goToLobby, secondary: true, style: { marginTop: 10 } }
+          ]}
+          onClose={restartGame}
+        />
       </SafeAreaView>
     </View>
   );

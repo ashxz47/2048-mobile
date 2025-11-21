@@ -39,9 +39,12 @@ const LobbyScreen = ({ navigation }) => {
   }, [navigation]);
 
   const loadData = async () => {
-    const score = await getBestScore();
-    const gameStats = await getStats();
-    const profile = await getUserProfile();
+    // Load all data in parallel for better performance
+    const [score, gameStats, profile] = await Promise.all([
+      getBestScore(),
+      getStats(),
+      getUserProfile(),
+    ]);
     setBestScore(score);
     setStats(gameStats);
     setUserProfile(profile);

@@ -1,5 +1,14 @@
 // 2048 Game Logic
 
+// Helper function to efficiently compare arrays
+const arraysEqual = (a, b) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
 // Initialize empty 4x4 grid
 export const initializeGrid = () => {
   const grid = Array(4).fill(null).map(() => Array(4).fill(0));
@@ -64,7 +73,7 @@ const moveLeft = (grid) => {
     }
 
     // Check if row changed
-    if (JSON.stringify(row) !== JSON.stringify(newGrid[i])) {
+    if (!arraysEqual(row, newGrid[i])) {
       moved = true;
     }
 

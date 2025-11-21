@@ -65,4 +65,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Tile;
+// Memoize the component to prevent unnecessary re-renders
+// Only re-render when the value prop changes
+export default React.memo(Tile);

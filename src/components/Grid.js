@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Tile from './Tile';
 import { colors } from '../utils/colors';
+import { GAME_CONFIG } from '../utils/constants';
 
 const { width } = Dimensions.get('window');
-const GRID_PADDING = 10;
-const CELL_MARGIN = 8;
 
 const Grid = ({ grid }) => {
-  const gridSize = width - 40; // 20px margin on each side
-  const cellSize = (gridSize - GRID_PADDING * 2 - CELL_MARGIN * 3) / 4;
+  // Memoize grid size calculations for better performance
+  const gridSize = useMemo(() => width - 40, [width]); // 20px margin on each side
+  const cellSize = useMemo(
+    () => (gridSize - GAME_CONFIG.GRID_PADDING * 2 - GAME_CONFIG.CELL_MARGIN * 3) / 4,
+    [gridSize]
+  );
 
   return (
-    <View style={[styles.grid, { width: gridSize, height: gridSize, padding: GRID_PADDING }]}>
+    <View style={[styles.grid, { width: gridSize, height: gridSize, padding: GAME_CONFIG.GRID_PADDING }]}>
       {grid.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
           {row.map((cell, colIndex) => (
@@ -23,8 +26,8 @@ const Grid = ({ grid }) => {
                 {
                   width: cellSize,
                   height: cellSize,
-                  marginRight: colIndex < 3 ? CELL_MARGIN : 0,
-                  marginBottom: rowIndex < 3 ? CELL_MARGIN : 0,
+                  marginRight: colIndex < 3 ? GAME_CONFIG.CELL_MARGIN : 0,
+                  marginBottom: rowIndex < 3 ? GAME_CONFIG.CELL_MARGIN : 0,
                 },
               ]}
             >
@@ -36,6 +39,9 @@ const Grid = ({ grid }) => {
     </View>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(Grid);
 
 const styles = StyleSheet.create({
   grid: {
