@@ -7,8 +7,8 @@ import {
   SafeAreaView,
   Modal,
   Alert,
+  PanResponder,
 } from 'react-native';
-import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Grid from '../components/Grid';
 import { colors } from '../utils/colors';
 import {
@@ -29,22 +29,29 @@ const GameScreen = ({ navigation }) => {
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
   const [continueAfterWin, setContinueAfterWin] = useState(false);
+  const [previousStates, setPreviousStates] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     initGame();
   }, []);
 
   const initGame = async () => {
-    const newGrid = initializeGrid();
-    setGrid(newGrid);
-    setScore(0);
-    setMoves(0);
-    setGameOver(false);
-    setWon(false);
-    setContinueAfterWin(false);
+    try {
+      const newGrid = initializeGrid();
+      setGrid(newGrid);
+      setScore(0);
+      setMoves(0);
+      setGameOver(false);
+      setWon(false);
+      setContinueAfterWin(false);
+      setPreviousStates([]);
 
-    const best = await getBestScore();
-    setBestScore(best);
+      const best = await getBestScore();
+      setBestScore(best);
+    } catch (e) {
+      setError(e.toString());
+    }
   };
 
   const handleMove = (direction) => {
@@ -53,6 +60,16 @@ const GameScreen = ({ navigation }) => {
     const result = move(grid, direction);
 
     if (!result.moved) return;
+
+    // Save current state for undo
+    setPreviousStates(prev => [...prev, {
+      grid: JSON.parse(JSON.stringify(grid)),
+      score,
+      moves,
+      gameOver,
+      won,
+      continueAfterWin
+    }]);
 
     const newGrid = addRandomTile(result.grid);
     const newScore = score + result.score;
@@ -80,6 +97,21 @@ const GameScreen = ({ navigation }) => {
     }
   };
 
+  const handleUndo = () => {
+    if (previousStates.length === 0) return;
+
+    const lastState = previousStates[previousStates.length - 1];
+
+    setGrid(lastState.grid);
+    setScore(lastState.score);
+    setMoves(lastState.moves);
+    setGameOver(lastState.gameOver);
+    setWon(lastState.won);
+    setContinueAfterWin(lastState.continueAfterWin);
+
+    setPreviousStates(prev => prev.slice(0, -1));
+  };
+
   const handleGameEnd = async (finalGrid, finalScore, finalMoves, playerWon) => {
     const highestTile = getHighestTile(finalGrid);
     await updateStats({
@@ -101,39 +133,36 @@ const GameScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
-  // Gesture handling
-  const gesture = Gesture.Pan()
-    .onEnd((event) => {
-      const { translationX, translationY } = event;
-      const absX = Math.abs(translationX);
-      const absY = Math.abs(translationY);
+  // PanResponder for gesture handling
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+        const minSwipeDistance = 50;
 
-      // Minimum swipe distance
-      const minSwipeDistance = 50;
+        if (absX < minSwipeDistance && absY < minSwipeDistance) return;
 
-      if (absX < minSwipeDistance && absY < minSwipeDistance) {
-        return;
-      }
-
-      if (absX > absY) {
-        // Horizontal swipe
-        if (translationX > 0) {
-          handleMove('right');
+        if (absX > absY) {
+          if (dx > 0) handleMove('right');
+          else handleMove('left');
         } else {
-          handleMove('left');
+          if (dy > 0) handleMove('down');
+          else handleMove('up');
         }
-      } else {
-        // Vertical swipe
-        if (translationY > 0) {
-          handleMove('down');
-        } else {
-          handleMove('up');
-        }
-      }
-    });
+      },
+    })
+  ).current;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+      {error && (
+        <View style={{ padding: 20, backgroundColor: 'red' }}>
+          <Text style={{ color: 'white', fontSize: 20 }}>Error: {error}</Text>
+        </View>
+      )}
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>2048</Text>
@@ -165,16 +194,21 @@ const GameScreen = ({ navigation }) => {
           <TouchableOpacity style={styles.button} onPress={restartGame}>
             <Text style={styles.buttonText}>NEW GAME</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton, previousStates.length === 0 && styles.disabledButton]}
+            onPress={handleUndo}
+            disabled={previousStates.length === 0}
+          >
+            <Text style={styles.buttonText}>UNDO</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={goToLobby}>
             <Text style={styles.buttonText}>MENU</Text>
           </TouchableOpacity>
         </View>
 
-        <GestureDetector gesture={gesture}>
-          <View style={styles.gameContainer}>
-            {grid.length > 0 && <Grid grid={grid} />}
-          </View>
-        </GestureDetector>
+        <View style={styles.gameContainer}>
+          {grid.length > 0 && <Grid grid={grid} />}
+        </View>
 
         <Text style={styles.instructions}>Swipe to move tiles!</Text>
 
@@ -210,12 +244,16 @@ const GameScreen = ({ navigation }) => {
               <Text style={styles.modalScore}>Moves: {moves}</Text>
               <Text style={styles.modalScore}>Highest Tile: {getHighestTile(grid)}</Text>
 
-              <TouchableOpacity style={styles.modalButton} onPress={restartGame}>
+              <TouchableOpacity style={styles.modalButton} onPress={handleUndo}>
+                <Text style={styles.buttonText}>UNDO</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.modalButton, styles.secondaryButton]} onPress={restartGame}>
                 <Text style={styles.buttonText}>NEW GAME</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, styles.secondaryButton]}
+                style={[styles.modalButton, styles.secondaryButton, { marginTop: 10 }]}
                 onPress={goToLobby}
               >
                 <Text style={styles.buttonText}>MENU</Text>
@@ -224,7 +262,7 @@ const GameScreen = ({ navigation }) => {
           </View>
         </Modal>
       </SafeAreaView>
-    </GestureHandlerRootView>
+    </View>
   );
 };
 
@@ -293,7 +331,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.button,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     borderRadius: 8,
     flex: 1,
     marginHorizontal: 5,
@@ -301,6 +339,12 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#b89b7d',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   buttonText: {
     color: colors.buttonText,

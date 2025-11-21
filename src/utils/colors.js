@@ -34,4 +34,16 @@ export const colors = {
   buttonText: '#f9f6f2',
   scoreBox: '#bbada0',
   gameOver: 'rgba(238, 228, 218, 0.73)',
+  // Premium UI Colors
+  primaryDark: '#776e65',
+  accent: '#edc22e',
+  surface: '#ffffff',
+  surfaceHighlight: '#f3f3f3',
+  shadow: 'rgba(0, 0, 0, 0.1)',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  success: '#5cb85c',
+  danger: '#d9534f',
+  gold: '#d4af37',
+  bronze: '#cd7f32',
+  silver: '#c0c0c0',
 };

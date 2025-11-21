@@ -9,10 +9,14 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { colors } from '../utils/colors';
 import { getBestScore, getStats } from '../utils/storage';
 import { getUserProfile, updateUsername } from '../utils/profile';
+
+const { width } = Dimensions.get('window');
 
 const LobbyScreen = ({ navigation }) => {
   const [bestScore, setBestScore] = useState(0);
@@ -83,47 +87,59 @@ const LobbyScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>2048</Text>
-        <Text style={styles.subtitle}>Join the numbers and get to the 2048 tile!</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>2048</Text>
+          <Text style={styles.subtitle}>Join the numbers to win!</Text>
+        </View>
 
-        <View style={styles.scoreContainer}>
-          <View style={styles.scoreBox}>
+        <View style={styles.heroSection}>
+          <View style={styles.scoreCard}>
             <Text style={styles.scoreLabel}>BEST SCORE</Text>
             <Text style={styles.scoreValue}>{bestScore}</Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={startNewGame}>
-          <Text style={styles.buttonText}>NEW GAME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.hallOfFameButton]}
-          onPress={openHallOfFame}
-        >
-          <Text style={styles.buttonText}>🏆 HALL OF FAME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => setShowStats(true)}
-        >
-          <Text style={styles.buttonText}>STATISTICS</Text>
-        </TouchableOpacity>
-
-        {!userProfile && (
+        <View style={styles.menuContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.tertiaryButton]}
-            onPress={openUsernameSetup}
+            style={[styles.menuButton, styles.primaryButton]}
+            onPress={startNewGame}
+            activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>SET USERNAME</Text>
+            <Text style={styles.primaryButtonText}>NEW GAME</Text>
           </TouchableOpacity>
-        )}
 
-        <View style={styles.instructions}>
-          <Text style={styles.instructionsTitle}>HOW TO PLAY:</Text>
-          <Text style={styles.instructionsText}>
-            Swipe to move tiles. When two tiles with the same number touch, they merge into one!
+          <TouchableOpacity
+            style={[styles.menuButton, styles.accentButton]}
+            onPress={openHallOfFame}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.accentButtonText}>🏆 HALL OF FAME</Text>
+          </TouchableOpacity>
+
+          <View style={styles.rowButtons}>
+            <TouchableOpacity
+              style={[styles.menuButton, styles.secondaryButton, styles.halfButton]}
+              onPress={() => setShowStats(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>STATS</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.menuButton, styles.secondaryButton, styles.halfButton]}
+              onPress={openUsernameSetup}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {userProfile ? 'PROFILE' : 'SETUP'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Swipe to move tiles. Merge same numbers!
           </Text>
         </View>
 
@@ -136,103 +152,101 @@ const LobbyScreen = ({ navigation }) => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Statistics</Text>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Statistics</Text>
+                <TouchableOpacity
+                  onPress={() => setShowStats(false)}
+                  style={styles.closeIcon}
+                >
+                  <Text style={styles.closeIconText}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
               {stats && (
-                <ScrollView style={styles.statsContainer}>
+                <ScrollView style={styles.statsContainer} showsVerticalScrollIndicator={false}>
                   {/* Username Section */}
-                  <View style={styles.usernameSection}>
-                    <Text style={styles.sectionTitle}>Player</Text>
+                  <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>PLAYER PROFILE</Text>
                     {userProfile ? (
-                      <View style={styles.usernameRow}>
+                      <View style={styles.profileCard}>
                         {editingUsername ? (
-                          <>
+                          <View style={styles.editContainer}>
                             <TextInput
                               style={styles.usernameInput}
                               value={newUsername}
                               onChangeText={setNewUsername}
                               maxLength={20}
                               autoFocus
+                              placeholder="Username"
+                              placeholderTextColor="#999"
                             />
-                            <TouchableOpacity
-                              style={styles.saveButton}
-                              onPress={handleSaveUsername}
-                            >
-                              <Text style={styles.saveButtonText}>Save</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.cancelButton}
-                              onPress={() => setEditingUsername(false)}
-                            >
-                              <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                          </>
+                            <View style={styles.editActions}>
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.saveButton]}
+                                onPress={handleSaveUsername}
+                              >
+                                <Text style={styles.actionButtonText}>Save</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.cancelButton]}
+                                onPress={() => setEditingUsername(false)}
+                              >
+                                <Text style={styles.actionButtonText}>Cancel</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
                         ) : (
-                          <>
+                          <View style={styles.profileRow}>
                             <Text style={styles.usernameText}>{userProfile.username}</Text>
                             <TouchableOpacity
-                              style={styles.editButton}
+                              style={styles.editIcon}
                               onPress={handleEditUsername}
                             >
-                              <Text style={styles.editButtonText}>Edit</Text>
+                              <Text style={styles.editIconText}>EDIT</Text>
                             </TouchableOpacity>
-                          </>
+                          </View>
                         )}
                       </View>
                     ) : (
                       <TouchableOpacity
-                        style={styles.setUsernameButton}
+                        style={styles.setupCard}
                         onPress={() => {
                           setShowStats(false);
                           openUsernameSetup();
                         }}
                       >
-                        <Text style={styles.setUsernameText}>Set up username to compete</Text>
+                        <Text style={styles.setupText}>Tap to set username</Text>
                       </TouchableOpacity>
                     )}
                   </View>
 
-                  <View style={styles.divider} />
-
-                  <Text style={styles.sectionTitle}>Statistics</Text>
-
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Games Played:</Text>
-                    <Text style={styles.statValue}>{stats.gamesPlayed}</Text>
-                  </View>
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Games Won:</Text>
-                    <Text style={styles.statValue}>{stats.gamesWon}</Text>
-                  </View>
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Win Rate:</Text>
-                    <Text style={styles.statValue}>
-                      {stats.gamesPlayed > 0
-                        ? `${((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(1)}%`
-                        : '0%'}
-                    </Text>
-                  </View>
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Total Moves:</Text>
-                    <Text style={styles.statValue}>{stats.totalMoves}</Text>
-                  </View>
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Best Tile:</Text>
-                    <Text style={styles.statValue}>{stats.bestTile || 0}</Text>
-                  </View>
-                  <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Best Score:</Text>
-                    <Text style={styles.statValue}>{bestScore}</Text>
+                  <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>GAME STATS</Text>
+                    <View style={styles.statsGrid}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{stats.gamesPlayed}</Text>
+                        <Text style={styles.statLabel}>Played</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{stats.gamesWon}</Text>
+                        <Text style={styles.statLabel}>Won</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>
+                          {stats.gamesPlayed > 0
+                            ? `${((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(0)}%`
+                            : '0%'}
+                        </Text>
+                        <Text style={styles.statLabel}>Win Rate</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{bestScore}</Text>
+                        <Text style={styles.statLabel}>Best</Text>
+                      </View>
+                    </View>
                   </View>
                 </ScrollView>
               )}
-
-              <TouchableOpacity
-                style={[styles.button, { marginTop: 20 }]}
-                onPress={() => setShowStats(false)}
-              >
-                <Text style={styles.buttonText}>CLOSE</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -248,205 +262,280 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  header: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    marginTop: Platform.OS === 'ios' ? 20 : 40,
   },
   title: {
-    fontSize: 80,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 10,
+    fontSize: 72,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    letterSpacing: 2,
+    includeFontPadding: false,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
-    textAlign: 'center',
-    marginBottom: 30,
-    paddingHorizontal: 20,
+    marginTop: 8,
+    fontWeight: '500',
   },
-  scoreContainer: {
-    marginBottom: 40,
-  },
-  scoreBox: {
-    backgroundColor: colors.scoreBox,
-    borderRadius: 8,
-    padding: 15,
-    minWidth: 120,
+  heroSection: {
     alignItems: 'center',
+    marginVertical: 30,
+  },
+  scoreCard: {
+    backgroundColor: colors.scoreBox,
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+    minWidth: 200,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   scoreLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: colors.textLight,
-    marginBottom: 5,
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
+    letterSpacing: 1,
   },
   scoreValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '800',
     color: colors.textLight,
   },
-  button: {
-    backgroundColor: colors.button,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-    marginBottom: 15,
-    minWidth: 200,
+  menuContainer: {
+    width: '100%',
+    gap: 16,
+  },
+  menuButton: {
+    paddingVertical: 18,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  primaryButton: {
+    backgroundColor: colors.button,
+  },
+  primaryButtonText: {
+    color: colors.buttonText,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  accentButton: {
+    backgroundColor: colors.gold || '#d4af37',
+  },
+  accentButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  rowButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  halfButton: {
+    flex: 1,
   },
   secondaryButton: {
-    backgroundColor: '#b89b7d',
+    backgroundColor: colors.gridBackground,
   },
-  hallOfFameButton: {
-    backgroundColor: '#d4af37', // Gold color for Hall of Fame
-  },
-  tertiaryButton: {
-    backgroundColor: '#9b8b7d',
-  },
-  buttonText: {
-    color: colors.buttonText,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  instructions: {
-    marginTop: 40,
-    paddingHorizontal: 20,
-  },
-  instructionsTitle: {
+  secondaryButtonText: {
+    color: colors.textLight,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 10,
-    textAlign: 'center',
+    fontWeight: '700',
   },
-  instructionsText: {
+  footer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  footerText: {
+    color: colors.text,
     fontSize: 14,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 20,
+    opacity: 0.6,
   },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay || 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
     backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 30,
-    width: '80%',
-    maxHeight: '70%',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    padding: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 28,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  closeIcon: {
+    padding: 8,
+  },
+  closeIconText: {
+    fontSize: 24,
+    color: colors.text,
     fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 20,
-    textAlign: 'center',
   },
-  statsContainer: {
-    marginBottom: 10,
+  sectionContainer: {
+    marginBottom: 32,
   },
-  statRow: {
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 16,
+    opacity: 0.5,
+    letterSpacing: 1,
+  },
+  profileCard: {
+    backgroundColor: colors.surface || '#fff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  profileRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  usernameText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  editIcon: {
+    backgroundColor: colors.gridBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  editIconText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  setupCard: {
+    backgroundColor: colors.surfaceHighlight || '#f3f3f3',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+  setupText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.surface || '#fff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.text,
     fontWeight: '500',
   },
-  statValue: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  usernameSection: {
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  usernameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  usernameText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.primary,
-    flex: 1,
-  },
-  editButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    backgroundColor: colors.button,
-    borderRadius: 5,
-  },
-  editButtonText: {
-    color: colors.textLight,
-    fontSize: 14,
-    fontWeight: '600',
+  // Edit Mode
+  editContainer: {
+    gap: 12,
   },
   usernameInput: {
-    flex: 1,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.gridBackground,
-    borderRadius: 5,
-    padding: 8,
-    marginRight: 5,
-    color: colors.text,
+    fontSize: 18,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+    paddingVertical: 8,
+    color: colors.primaryDark,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   saveButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#5cb85c',
-    borderRadius: 5,
-    marginRight: 5,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    backgroundColor: colors.success || '#5cb85c',
   },
   cancelButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#d9534f',
-    borderRadius: 5,
+    backgroundColor: colors.danger || '#d9534f',
   },
-  cancelButtonText: {
+  actionButtonText: {
     color: '#fff',
-    fontSize: 14,
     fontWeight: '600',
-  },
-  setUsernameButton: {
-    backgroundColor: '#f0e6d6',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  setUsernameText: {
-    color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 15,
   },
 });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import LobbyScreen from './src/screens/LobbyScreen';
 import GameScreen from './src/screens/GameScreen';
@@ -40,7 +41,7 @@ export default function App() {
           }));
         };
       }
-      return () => {}; // Return empty unsubscribe for other events
+      return () => { }; // Return empty unsubscribe for other events
     },
   };
 
@@ -60,9 +61,9 @@ export default function App() {
   };
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
       {renderScreen()}
-    </>
+    </View>
   );
 }
