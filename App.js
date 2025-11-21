@@ -10,40 +10,49 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Lobby');
   const [listeners, setListeners] = useState({});
 
-  // Navigation object with listener support
-  const navigation = {
+  // Create stable navigation object
+  const [navigation] = useState(() => ({
     navigate: (screen) => {
       setCurrentScreen(screen);
-      // Trigger focus listener when navigating back to a screen
-      if (listeners[screen]) {
-        listeners[screen].forEach(callback => callback());
-      }
     },
     goBack: () => {
       setCurrentScreen('Lobby');
-      // Trigger focus listener when going back to Lobby
-      if (listeners['Lobby']) {
-        listeners['Lobby'].forEach(callback => callback());
-      }
     },
     addListener: (event, callback) => {
       if (event === 'focus') {
-        const screenName = currentScreen;
-        setListeners(prev => ({
-          ...prev,
-          [screenName]: [...(prev[screenName] || []), callback]
-        }));
-        // Return unsubscribe function
-        return () => {
+        // Capture the current screen at listener registration time
+        // This is set correctly by the useEffect that will pass the screen context
+        setCurrentScreen(current => {
+          const screenName = current;
           setListeners(prev => ({
             ...prev,
-            [screenName]: (prev[screenName] || []).filter(cb => cb !== callback)
+            [screenName]: [...(prev[screenName] || []), callback]
           }));
+          return current; // Don't actually change the screen
+        });
+
+        // Return unsubscribe function
+        return () => {
+          setCurrentScreen(current => {
+            const screenName = current;
+            setListeners(prev => ({
+              ...prev,
+              [screenName]: (prev[screenName] || []).filter(cb => cb !== callback)
+            }));
+            return current;
+          });
         };
       }
       return () => { }; // Return empty unsubscribe for other events
     },
-  };
+  }));
+
+  // Trigger focus listeners when screen changes
+  useEffect(() => {
+    if (listeners[currentScreen]) {
+      listeners[currentScreen].forEach(callback => callback());
+    }
+  }, [currentScreen, listeners]);
 
   const renderScreen = () => {
     switch (currentScreen) {

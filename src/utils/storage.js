@@ -1,69 +1,49 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const BEST_SCORE_KEY = '@2048_best_score';
-const STATS_KEY = '@2048_stats';
+/**
+ * Storage Utilities
+ * High-level storage functions using storageService and domain models
+ */
+import { storageService, STORAGE_KEYS } from '../services/storageService';
+import { GameStats } from '../models/GameStats';
 
 // Save best score
 export const saveBestScore = async (score) => {
-  try {
-    await AsyncStorage.setItem(BEST_SCORE_KEY, score.toString());
-  } catch (error) {
-    console.error('Error saving best score:', error);
-  }
+  return storageService.set(STORAGE_KEYS.BEST_SCORE, score);
 };
 
 // Get best score
 export const getBestScore = async () => {
-  try {
-    const value = await AsyncStorage.getItem(BEST_SCORE_KEY);
-    return value !== null ? parseInt(value, 10) : 0;
-  } catch (error) {
-    console.error('Error getting best score:', error);
-    return 0;
-  }
+  return storageService.get(STORAGE_KEYS.BEST_SCORE, 0);
 };
 
 // Save game statistics
 export const saveStats = async (stats) => {
-  try {
-    await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
-  } catch (error) {
-    console.error('Error saving stats:', error);
-  }
+  const statsData = stats instanceof GameStats ? stats.toJSON() : stats;
+  return storageService.set(STORAGE_KEYS.STATS, statsData);
 };
 
 // Get game statistics
 export const getStats = async () => {
-  try {
-    const value = await AsyncStorage.getItem(STATS_KEY);
-    return value !== null ? JSON.parse(value) : {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      totalMoves: 0,
-      bestTile: 0,
-    };
-  } catch (error) {
-    console.error('Error getting stats:', error);
-    return {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      totalMoves: 0,
-      bestTile: 0,
-    };
-  }
+  const data = await storageService.get(STORAGE_KEYS.STATS, null);
+  return GameStats.fromJSON(data);
 };
 
-// Update statistics
+// Update statistics after a game ends
 export const updateStats = async (gameData) => {
   try {
     const currentStats = await getStats();
-    const newStats = {
-      gamesPlayed: currentStats.gamesPlayed + 1,
-      gamesWon: currentStats.gamesWon + (gameData.won ? 1 : 0),
-      totalMoves: currentStats.totalMoves + gameData.moves,
-      bestTile: Math.max(currentStats.bestTile, gameData.highestTile),
-    };
+    const newStats = currentStats.incrementGame(
+      gameData.won,
+      gameData.moves,
+      gameData.highestTile,
+      gameData.score
+    );
     await saveStats(newStats);
+
+    // Also update best score if needed
+    if (gameData.score > await getBestScore()) {
+      await saveBestScore(gameData.score);
+    }
+
     return newStats;
   } catch (error) {
     console.error('Error updating stats:', error);

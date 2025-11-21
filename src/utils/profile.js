@@ -1,7 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const PROFILE_KEY = '@2048_user_profile';
-const USER_ID_KEY = '@2048_user_id';
+/**
+ * User Profile Utilities
+ * High-level profile functions using storageService and UserProfile model
+ */
+import { storageService, STORAGE_KEYS } from '../services/storageService';
+import { UserProfile } from '../models/UserProfile';
 
 /**
  * Generate a unique user ID
@@ -11,44 +13,48 @@ const generateUserId = () => {
 };
 
 /**
- * Get user profile (username, userId)
- * @returns {Promise<{username: string, userId: string} | null>}
+ * Get or generate user ID
+ */
+const getUserId = async () => {
+  let userId = await storageService.get(STORAGE_KEYS.USER_ID);
+  if (!userId) {
+    userId = generateUserId();
+    await storageService.set(STORAGE_KEYS.USER_ID, userId);
+  }
+  return userId;
+};
+
+/**
+ * Get user profile
+ * @returns {Promise<UserProfile | null>}
  */
 export const getUserProfile = async () => {
-  try {
-    const profileData = await AsyncStorage.getItem(PROFILE_KEY);
-    if (profileData) {
-      return JSON.parse(profileData);
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting user profile:', error);
-    return null;
-  }
+  const profileData = await storageService.get(STORAGE_KEYS.USER_PROFILE);
+  return UserProfile.fromJSON(profileData);
 };
 
 /**
  * Save user profile
  * @param {string} username
- * @returns {Promise<{username: string, userId: string}>}
+ * @returns {Promise<UserProfile>}
  */
 export const saveUserProfile = async (username) => {
   try {
-    let userId = await AsyncStorage.getItem(USER_ID_KEY);
-
-    // Generate userId if it doesn't exist
-    if (!userId) {
-      userId = generateUserId();
-      await AsyncStorage.setItem(USER_ID_KEY, userId);
+    // Validate username
+    const validation = UserProfile.validateUsername(username);
+    if (!validation.valid) {
+      throw new Error(validation.errors.join(', '));
     }
 
-    const profile = {
-      username: username.trim(),
-      userId,
-      createdAt: new Date().toISOString(),
-    };
+    // Get or generate userId
+    const userId = await getUserId();
 
-    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    // Create profile
+    const profile = new UserProfile(userId, validation.trimmed);
+
+    // Save to storage
+    await storageService.set(STORAGE_KEYS.USER_PROFILE, profile.toJSON());
+
     return profile;
   } catch (error) {
     console.error('Error saving user profile:', error);
@@ -63,7 +69,7 @@ export const saveUserProfile = async (username) => {
 export const hasUserProfile = async () => {
   try {
     const profile = await getUserProfile();
-    return profile !== null && profile.username && profile.username.length > 0;
+    return profile !== null && profile.isComplete();
   } catch (error) {
     console.error('Error checking user profile:', error);
     return false;
@@ -73,16 +79,20 @@ export const hasUserProfile = async () => {
 /**
  * Update username
  * @param {string} newUsername
- * @returns {Promise<void>}
+ * @returns {Promise<UserProfile>}
  */
 export const updateUsername = async (newUsername) => {
   try {
     const profile = await getUserProfile();
+
     if (profile) {
-      profile.username = newUsername.trim();
-      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      // Update existing profile
+      const updatedProfile = profile.updateUsername(newUsername);
+      await storageService.set(STORAGE_KEYS.USER_PROFILE, updatedProfile.toJSON());
+      return updatedProfile;
     } else {
-      await saveUserProfile(newUsername);
+      // Create new profile
+      return await saveUserProfile(newUsername);
     }
   } catch (error) {
     console.error('Error updating username:', error);

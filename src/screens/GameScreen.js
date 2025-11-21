@@ -127,7 +127,7 @@ const GameScreen = ({ navigation }) => {
 
     // Save current state for undo
     setPreviousStates(prev => [...prev, {
-      grid: JSON.parse(JSON.stringify(grid)),
+      grid: grid.map(row => [...row]), // Efficient deep clone of 2D array
       score,
       moves,
       gameOver,
