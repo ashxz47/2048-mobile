@@ -11,20 +11,18 @@ import {
 } from 'react-native';
 import { colors } from '../utils/colors';
 import {
-  getLeaderboardByScore,
-  getLeaderboardByTile,
-  getLeaderboardByWinRate,
-  getLeaderboardByWins,
+  getLeaderboard,
+  LEADERBOARD_STRATEGIES,
   getCurrentUserRank,
 } from '../utils/leaderboard';
 import { getUserProfile } from '../utils/profile';
 
-const CATEGORIES = [
-  { id: 'score', label: 'Best Score', field: 'bestScore' },
-  { id: 'tile', label: 'Best Tile', field: 'bestTile' },
-  { id: 'winRate', label: 'Win Rate', field: 'winRate' },
-  { id: 'wins', label: 'Total Wins', field: 'gamesWon' },
-];
+// Build categories from strategies
+const CATEGORIES = Object.keys(LEADERBOARD_STRATEGIES).map(id => ({
+  id,
+  label: LEADERBOARD_STRATEGIES[id].label,
+  field: LEADERBOARD_STRATEGIES[id].field,
+}));
 
 const HallOfFameScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('score');
@@ -49,24 +47,8 @@ const HallOfFameScreen = ({ navigation }) => {
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
-      let data;
-      switch (selectedCategory) {
-        case 'score':
-          data = await getLeaderboardByScore(20);
-          break;
-        case 'tile':
-          data = await getLeaderboardByTile(20);
-          break;
-        case 'winRate':
-          data = await getLeaderboardByWinRate(20);
-          break;
-        case 'wins':
-          data = await getLeaderboardByWins(20);
-          break;
-        default:
-          data = await getLeaderboardByScore(20);
-      }
-
+      // Use unified getLeaderboard function with strategy pattern
+      const data = await getLeaderboard(selectedCategory, 20);
       setLeaderboardData(data);
 
       // Get current user rank
@@ -80,18 +62,8 @@ const HallOfFameScreen = ({ navigation }) => {
   };
 
   const formatValue = (category, value) => {
-    switch (category) {
-      case 'score':
-        return value.toLocaleString();
-      case 'tile':
-        return value;
-      case 'winRate':
-        return `${value.toFixed(1)}%`;
-      case 'wins':
-        return value;
-      default:
-        return value;
-    }
+    const strategy = LEADERBOARD_STRATEGIES[category];
+    return strategy ? strategy.formatter(value) : value;
   };
 
   const getRankStyle = (rank) => {

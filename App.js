@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import LobbyScreen from './src/screens/LobbyScreen';
 import GameScreen from './src/screens/GameScreen';
 import HallOfFameScreen from './src/screens/HallOfFameScreen';
@@ -70,9 +71,11 @@ export default function App() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar style="dark" />
-      {renderScreen()}
-    </View>
+    <ErrorBoundary>
+      <View style={{ flex: 1 }}>
+        <StatusBar style="dark" />
+        {renderScreen()}
+      </View>
+    </ErrorBoundary>
   );
 }

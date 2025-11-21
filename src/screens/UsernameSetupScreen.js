@@ -12,43 +12,25 @@ import {
 } from 'react-native';
 import { colors } from '../utils/colors';
 import { saveUserProfile } from '../utils/profile';
+import { validateUsername } from '../utils/validators';
 
 const UsernameSetupScreen = ({ navigation, onSetupComplete }) => {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    const trimmedUsername = username.trim();
+    // Validate username using shared validator
+    const validation = validateUsername(username);
 
-    // Validation
-    if (trimmedUsername.length === 0) {
-      Alert.alert('Invalid Username', 'Please enter a username');
-      return;
-    }
-
-    if (trimmedUsername.length < 3) {
-      Alert.alert('Invalid Username', 'Username must be at least 3 characters long');
-      return;
-    }
-
-    if (trimmedUsername.length > 20) {
-      Alert.alert('Invalid Username', 'Username must be less than 20 characters');
-      return;
-    }
-
-    // Check for valid characters (alphanumeric, spaces, underscores, hyphens)
-    const validUsernameRegex = /^[a-zA-Z0-9 _-]+$/;
-    if (!validUsernameRegex.test(trimmedUsername)) {
-      Alert.alert(
-        'Invalid Username',
-        'Username can only contain letters, numbers, spaces, underscores, and hyphens'
-      );
+    if (!validation.valid) {
+      Alert.alert('Invalid Username', validation.errors.join('\n'));
       return;
     }
 
     setLoading(true);
     try {
-      await saveUserProfile(trimmedUsername);
+      // Use the trimmed/validated username
+      await saveUserProfile(validation.value);
 
       if (onSetupComplete) {
         onSetupComplete();
